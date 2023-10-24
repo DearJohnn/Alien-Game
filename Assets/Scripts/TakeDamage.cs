@@ -21,7 +21,7 @@ public class TakeDamage : MonoBehaviour
     }
     public void Damage()
     {
-        currentHealth -= 10;
+        currentHealth -= 25;
 
         healthBar.UpdateHealthBar(maxHealth, currentHealth);
     }

@@ -5,6 +5,11 @@ TagManager:
   serializedVersion: 2
   tags:
   - CinemachineTarget
+  - Card
+  - NPC3
+  - NPC2
+  - NPC1
+  - CreditCard
   layers:
   - Default
   - TransparentFX

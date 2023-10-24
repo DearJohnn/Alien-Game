@@ -11,12 +11,29 @@ public class DialogueManager : MonoBehaviour
     [Header("Dialogue UI")]
     [SerializeField] private GameObject dialoguePanel;
     [SerializeField] private TextMeshProUGUI dialogueText;
+    [SerializeField] private TextMeshProUGUI displayNameText;
+
+    private Animator layoutAnimator;
+
     private Story currentStory;
     public bool dialogueIsPlaying { get; private set; }
+
+    [Header("Load Globals JSON")]
+
+    [SerializeField] private TextAsset loadGlobalsJSON;
+
+    //[Header("Globals Ink File")]
+
+    //[SerializeField] private InkFile globalsInkFile;
 
     [Header("Choices UI")]
     [SerializeField] private GameObject[] choices;
     private TextMeshProUGUI[] choicesText;
+
+    private const string SPEAKER_TAG = "speaker";
+    private const string LAYOUT_TAG = "layout";
+
+    private DialogueVariables dialogueVariables;
 
     private void Awake()
     {
@@ -25,6 +42,8 @@ public class DialogueManager : MonoBehaviour
             Debug.LogWarning("Found more than one Diague Manager in the scene");
         }
         instance = this;
+
+        dialogueVariables = new DialogueVariables(loadGlobalsJSON);
     }
 
     public static DialogueManager GetInstance()
@@ -36,6 +55,8 @@ public class DialogueManager : MonoBehaviour
     {
         dialogueIsPlaying = false;
         dialoguePanel.SetActive(false);
+
+        layoutAnimator = dialoguePanel.GetComponent<Animator>();
 
         choicesText = new TextMeshProUGUI[choices.Length];
         int index = 0;
@@ -58,11 +79,17 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
-    public void EnterDialogueMode(TextAsset inkJSON)
+    public void EnterDialogueMode(TextAsset[] inkJSON)
     {
-        currentStory = new Story(inkJSON.text);
+        
+        currentStory = new Story(inkJSON[DialogueTrigger.i].text);
         dialogueIsPlaying = true;
         dialoguePanel.SetActive(true);
+
+        dialogueVariables.StartListening(currentStory);
+
+        displayNameText.text = "???";
+        layoutAnimator.Play("right");
 
         ContinueStory();
     }
@@ -70,6 +97,9 @@ public class DialogueManager : MonoBehaviour
     private IEnumerator ExitDialogueMode()
     {
         yield return new WaitForSeconds(0.5f);
+
+        dialogueVariables.StopListening(currentStory);
+
         dialogueIsPlaying = false;
         dialoguePanel.SetActive(false);
         dialogueText.text = "";
@@ -82,10 +112,41 @@ public class DialogueManager : MonoBehaviour
             dialogueText.text = currentStory.Continue();
 
             DisplayChoices();
+
+            HandleTags(currentStory.currentTags);
         }
         else
         {
             StartCoroutine(ExitDialogueMode());
+        }
+    }
+
+    private void HandleTags(List<string> currentTags)
+    {
+        foreach (string tag in currentTags)
+        {
+            string[] splitTag = tag.Split(':');
+            if(splitTag.Length != 2)
+            {
+                Debug.LogError("Tag could not be appropriately parsed: " + tag);
+            }
+            string tagKey = splitTag[0].Trim();
+            string tagValue = splitTag[1].Trim();
+
+            switch (tagKey)
+            {
+                case SPEAKER_TAG:
+                    displayNameText.text = tagValue;
+                    //Debug.Log("speaker=" + tagValue);
+                    break;
+                case LAYOUT_TAG:
+                    //Debug.Log("layout=" + tagValue);
+                    layoutAnimator.Play(tagValue);
+                    break;
+
+                default:
+                    Debug.LogWarning("Tag came in bvut is not currently being handled: " + tag); break;
+            }
         }
     }
 
@@ -124,5 +185,16 @@ public class DialogueManager : MonoBehaviour
     public void MakeChoice(int choiceIndex)
     {
         currentStory.ChooseChoiceIndex(choiceIndex);
+    }
+
+    public Ink.Runtime.Object GetVariableState(string variableName)
+    {
+        Ink.Runtime.Object variableValue = null;
+        dialogueVariables.variables.TryGetValue(variableName, out variableValue);
+        if(variableValue == null)
+        {
+            Debug.LogWarning("Ink Variable was found to be null: " + variableName);
+        }
+        return variableValue;
     }
 }

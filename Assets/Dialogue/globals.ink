@@ -1,0 +1,5 @@
+VAR firstTalkWithAnna = "false"
+VAR firstTalkWithDoctor = "false"
+VAR firstTalkWithBob = "false"
+VAR submitCard = "false"
+VAR rehabilitation = "false"

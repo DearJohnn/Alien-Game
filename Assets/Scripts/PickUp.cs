@@ -52,12 +52,17 @@ public class PickUp : MonoBehaviour
     {
         for (int i = 0; i < inventory.slots.Length; i++)
         {
+
             if (inventory.isFull[i] == false)
             {
                 //ITEM CAN BE ADDED TO INVENTORY
                 inventory.isFull[i] = true;
                 Instantiate(itemButton, inventory.slots[i].transform);
                 Destroy(gameObject);
+                if(gameObject.tag == "CreditCard")
+                {
+                    GameManager.creditCard = true;
+                }
                 break;
             }
         }
